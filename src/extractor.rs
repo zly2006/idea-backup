@@ -25,11 +25,7 @@ struct Args {
     output: Option<PathBuf>,
 }
 
-fn extract_7z_file(
-    file_path: &PathBuf,
-    output_dir: &Path,
-    password: &str,
-) -> Result<(), String> {
+fn extract_7z_file(file_path: &PathBuf, output_dir: &Path, password: &str) -> Result<(), String> {
     if file_path.extension().is_none_or(|ext| ext != "7z") {
         return Err(format!("{} 不是7z文件", file_path.display()));
     }

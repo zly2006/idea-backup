@@ -6,13 +6,8 @@ line tools.
 
 use std::path::Path;
 
-use crate::{
-    gitignore::{self, Gitignore, GitignoreBuilder},
-};
-use crate::ignore::{
-
-Error, Match,
-};
+use crate::gitignore::{self, Gitignore, GitignoreBuilder};
+use crate::ignore::{Error, Match};
 
 /// Glob represents a single glob in an override matcher.
 ///
@@ -96,11 +91,7 @@ impl Override {
     /// given) is stripped. If there is no common suffix/prefix overlap, then
     /// `path` is assumed to reside in the same directory as the root path for
     /// this set of overrides.
-    pub fn matched<'a, P: AsRef<Path>>(
-        &'a self,
-        path: P,
-        is_dir: bool,
-    ) -> Match<Glob<'a>> {
+    pub fn matched<'a, P: AsRef<Path>>(&'a self, path: P, is_dir: bool) -> Match<Glob<'a>> {
         if self.is_empty() {
             return Match::None;
         }
@@ -123,7 +114,9 @@ impl OverrideBuilder {
     ///
     /// Matching is done relative to the directory path provided.
     pub fn new<P: AsRef<Path>>(path: P) -> OverrideBuilder {
-        OverrideBuilder { builder: GitignoreBuilder::new(path) }
+        OverrideBuilder {
+            builder: GitignoreBuilder::new(path),
+        }
     }
 
     /// Builds a new override matcher from the globs added so far.
@@ -149,10 +142,7 @@ impl OverrideBuilder {
     /// When this option is changed, only globs added after the change will be affected.
     ///
     /// This is disabled by default.
-    pub fn case_insensitive(
-        &mut self,
-        yes: bool,
-    ) -> Result<&mut OverrideBuilder, Error> {
+    pub fn case_insensitive(&mut self, yes: bool) -> Result<&mut OverrideBuilder, Error> {
         // TODO: This should not return a `Result`. Fix this in the next semver
         // release.
         self.builder.case_insensitive(yes)?;

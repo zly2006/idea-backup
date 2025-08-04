@@ -9,9 +9,9 @@ use clap::Parser;
 use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
 
-pub mod pattern;
-pub mod ignore;
 pub mod ensure_7z;
+pub mod ignore;
+pub mod pattern;
 use ensure_7z::ensure_7z_installed;
 pub mod default_types;
 pub mod dir;
@@ -67,9 +67,7 @@ fn expand_path(path: &str) -> PathBuf {
     } else if path == "~" {
         dirs::home_dir().expect("无法获取home目录")
     } else if let Some(path) = path.strip_prefix("./") {
-        env::current_dir()
-            .expect("无法获取当前目录")
-            .join(path)
+        env::current_dir().expect("无法获取当前目录").join(path)
     } else if path == "." {
         env::current_dir().expect("无法获取当前目录")
     } else {
@@ -301,12 +299,11 @@ fn main() {
                         }
 
                         // 复制文件到临时目录
-                        fs::copy(entry_path, &dest_path)
-                            .expect("无法复制文件到临时目录");
+                        fs::copy(entry_path, &dest_path).expect("无法复制文件到临时目录");
                         file_count += 1;
                     }
                 } else {
-                    eprintln!("读取目录项失败: {:?}", entry);
+                    eprintln!("读取目录项失败: {entry:?}");
                 }
             }
 

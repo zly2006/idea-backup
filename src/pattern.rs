@@ -440,7 +440,7 @@ impl Pattern {
                             return Err(PatternError {
                                 pos: old + 2,
                                 msg: ERROR_WILDCARDS,
-                            })
+                            });
                         }
                         Ordering::Equal => {
                             // ** can only be an entire path component
@@ -573,7 +573,7 @@ impl Pattern {
     /// `Pattern` using the default match options (i.e. `MatchOptions::new()`).
     pub fn matches_path(&self, path: &Path) -> bool {
         // FIXME (#9639): This needs to handle non-utf8 paths
-        path.to_str().map_or(false, |s| self.matches(s))
+        path.to_str().is_some_and(|s| self.matches(s))
     }
 
     /// Return if the given `str` matches this `Pattern` using the specified
@@ -587,7 +587,7 @@ impl Pattern {
     pub fn matches_path_with(&self, path: &Path, options: MatchOptions) -> bool {
         // FIXME (#9639): This needs to handle non-utf8 paths
         path.to_str()
-            .map_or(false, |s| self.matches_with(s, options))
+            .is_some_and(|s| self.matches_with(s, options))
     }
 
     /// Access the original glob pattern.
@@ -625,10 +625,10 @@ impl Pattern {
                         match *token {
                             AnyRecursiveSequence if !follows_separator => continue,
                             AnySequence
-                            if options.require_literal_separator && follows_separator =>
-                                {
-                                    return SubPatternDoesntMatch
-                                }
+                                if options.require_literal_separator && follows_separator =>
+                            {
+                                return SubPatternDoesntMatch;
+                            }
                             _ => (),
                         }
                         match self.matches_from(
@@ -652,13 +652,13 @@ impl Pattern {
 
                     if !match *token {
                         AnyChar | AnyWithin(..) | AnyExcept(..)
-                        if (options.require_literal_separator && is_sep)
-                            || (follows_separator
-                            && options.require_literal_leading_dot
-                            && c == '.') =>
-                            {
-                                false
-                            }
+                            if (options.require_literal_separator && is_sep)
+                                || (follows_separator
+                                    && options.require_literal_leading_dot
+                                    && c == '.') =>
+                        {
+                            false
+                        }
                         AnyChar => true,
                         AnyWithin(ref specifiers) => in_char_specifiers(specifiers, c, options),
                         AnyExcept(ref specifiers) => !in_char_specifiers(specifiers, c, options),
@@ -734,8 +734,8 @@ fn fill_todo(
             let next_path = PathWrapper::from_path(next_path);
             if (special && is_dir)
                 || (!special
-                && (fs::metadata(&next_path).is_ok()
-                || fs::symlink_metadata(&next_path).is_ok()))
+                    && (fs::metadata(&next_path).is_ok()
+                        || fs::symlink_metadata(&next_path).is_ok()))
             {
                 add(todo, next_path);
             }
@@ -752,7 +752,7 @@ fn fill_todo(
                         PathWrapper::from_dir_entry(path, e)
                     })
                 })
-                    .collect::<Result<Vec<_>, _>>()
+                .collect::<Result<Vec<_>, _>>()
             });
             match dirs {
                 Ok(mut children) => {
