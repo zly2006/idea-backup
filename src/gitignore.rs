@@ -521,8 +521,12 @@ pub fn gitconfig_excludes_path() -> Option<PathBuf> {
     // both can be active at the same time, where $HOME/.gitconfig takes
     // precedent. So if $HOME/.gitconfig defines a `core.excludesFile`, then
     // we're done.
-    if let Some(path) = gitconfig_home_contents().and_then(|x| parse_excludes_file(&x)) { return Some(path) }
-    if let Some(path) = gitconfig_xdg_contents().and_then(|x| parse_excludes_file(&x)) { return Some(path) }
+    if let Some(path) = gitconfig_home_contents().and_then(|x| parse_excludes_file(&x)) {
+        return Some(path);
+    }
+    if let Some(path) = gitconfig_xdg_contents().and_then(|x| parse_excludes_file(&x)) {
+        return Some(path);
+    }
     excludes_file_default()
 }
 

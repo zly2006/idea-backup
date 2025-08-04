@@ -258,12 +258,8 @@ impl Ignore {
         let ig_matcher = if !self.0.opts.ignore {
             Gitignore::empty()
         } else {
-            let (m, err) = create_gitignore(
-                dir,
-                dir,
-                &[".ignore"],
-                self.0.opts.ignore_case_insensitive,
-            );
+            let (m, err) =
+                create_gitignore(dir, dir, &[".ignore"], self.0.opts.ignore_case_insensitive);
             errs.maybe_push(err);
             m
         };

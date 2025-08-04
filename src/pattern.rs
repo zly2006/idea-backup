@@ -586,8 +586,7 @@ impl Pattern {
     /// `Pattern` using the specified match options.
     pub fn matches_path_with(&self, path: &Path, options: MatchOptions) -> bool {
         // FIXME (#9639): This needs to handle non-utf8 paths
-        path.to_str()
-            .is_some_and(|s| self.matches_with(s, options))
+        path.to_str().is_some_and(|s| self.matches_with(s, options))
     }
 
     /// Access the original glob pattern.

@@ -181,9 +181,7 @@ impl DirEntryInner {
         use self::DirEntryInner::*;
         match *self {
             Stdin => {
-                let err = Error::Io(io::Error::other(
-                    "<stdin> has no metadata",
-                ));
+                let err = Error::Io(io::Error::other("<stdin> has no metadata"));
                 Err(err.with_path("<stdin>"))
             }
             Walkdir(ref x) => x
