@@ -9,10 +9,18 @@ use clap::Parser;
 use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
 
-mod file_walker;
-mod ensure_7z;
+pub mod pattern;
+pub mod ignore;
+pub mod ensure_7z;
 use ensure_7z::ensure_7z_installed;
-use file_walker::FileWalker;
+pub mod default_types;
+pub mod dir;
+pub mod gitignore;
+pub mod overrides;
+pub mod pathutil;
+pub mod types;
+pub mod walk;
+use ignore::WalkBuilder;
 
 #[derive(Parser)]
 #[command(name = "idea-backup")]
@@ -128,9 +136,24 @@ impl SnapshotManager {
 
 /// 获取目录中最新的修改时间
 fn get_latest_modification_time(path: &PathBuf) -> Result<u64, Box<dyn std::error::Error>> {
-    let walker = FileWalker::new(path).include_hidden(true).include_git(true); // 包含 .git 目录
+    let mut latest_time = 0;
 
-    walker.get_latest_modification_time(path)
+    for entry in WalkBuilder::new(path).build() {
+        if let Ok(entry) = entry {
+            if let Ok(metadata) = entry.metadata() {
+                if let Ok(modified) = metadata.modified() {
+                    if let Ok(duration) = modified.duration_since(UNIX_EPOCH) {
+                        let timestamp = duration.as_secs();
+                        if timestamp > latest_time {
+                            latest_time = timestamp;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(latest_time)
 }
 
 /// 检查目录是否有文件在指定时间之后被修改
@@ -138,9 +161,21 @@ fn has_modifications_after(
     path: &PathBuf,
     after_timestamp: u64,
 ) -> Result<bool, Box<dyn std::error::Error>> {
-    let walker = FileWalker::new(path).include_hidden(true).include_git(true); // 包含 .git 目录
-
-    walker.has_modifications_after(path, after_timestamp)
+    for entry in WalkBuilder::new(path).build() {
+        if let Ok(entry) = entry {
+            if let Ok(metadata) = entry.metadata() {
+                if let Ok(modified) = metadata.modified() {
+                    if let Ok(duration) = modified.duration_since(UNIX_EPOCH) {
+                        let timestamp = duration.as_secs();
+                        if timestamp > after_timestamp {
+                            return Ok(true);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Ok(false)
 }
 
 fn main() {
@@ -249,19 +284,31 @@ fn main() {
             fs::create_dir_all(&temp_dir).expect("无法创建临时目录");
 
             // 使用FileWalker复制文件到临时目录
-            let walker = FileWalker::new(&path)
-                .include_hidden(true)
-                .include_git(true); // 包含 .git 目录
+            let walker = WalkBuilder::new(&path); // 包含 .git 目录
 
-            let file_count = match walker.copy_files_to(&path, &temp_dir) {
-                Ok(count) => count,
-                Err(e) => {
-                    eprintln!("复制文件失败: {e}");
-                    // 清理临时目录
-                    let _ = fs::remove_dir_all(&temp_dir);
-                    continue;
+            let mut file_count = 0;
+
+            for entry in walker.build() {
+                if let Ok(entry) = entry {
+                    let entry_path = entry.path();
+                    if entry_path.is_file() {
+                        let relative_path = entry_path.strip_prefix(&path).unwrap();
+                        let dest_path = temp_dir.join(relative_path);
+
+                        // 确保目标目录存在
+                        if let Some(parent) = dest_path.parent() {
+                            fs::create_dir_all(parent).expect("无法创建目标目录");
+                        }
+
+                        // 复制文件到临时目录
+                        fs::copy(entry_path, &dest_path)
+                            .expect("无法复制文件到临时目录");
+                        file_count += 1;
+                    }
+                } else {
+                    eprintln!("读取目录项失败: {:?}", entry);
                 }
-            };
+            }
 
             println!("  已复制 {file_count} 个文件到临时目录");
 
