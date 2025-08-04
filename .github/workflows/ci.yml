@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        rust: [stable, beta]
+        rust: [stable]
         exclude:
           # 减少 CI 时间，只在 stable 版本测试所有平台
           - os: windows-latest
@@ -31,6 +31,7 @@ jobs:
       uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ matrix.rust }}
+        components: clippy, rustfmt
 
     - name: Cache cargo registry
       uses: actions/cache@v3
