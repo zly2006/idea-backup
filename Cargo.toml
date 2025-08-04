@@ -1,0 +1,19 @@
+[package]
+name = "idea-backup"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "idea-backup"
+path = "src/main.rs"
+
+[[bin]]
+name = "7z-extractor"
+path = "src/extractor.rs"
+
+[dependencies]
+clap = { version = "4.5.42", features = ["derive"] }
+dotenv = "0.15"
+dirs = "6.0.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
