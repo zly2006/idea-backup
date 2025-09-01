@@ -12,16 +12,7 @@ use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
 
 pub mod ensure_7z;
-pub mod ignore;
-pub mod pattern;
 use ensure_7z::ensure_7z_installed;
-pub mod default_types;
-pub mod dir;
-pub mod gitignore;
-pub mod overrides;
-pub mod pathutil;
-pub mod types;
-pub mod walk;
 use ignore::WalkBuilder;
 
 #[derive(Parser)]
@@ -85,13 +76,10 @@ impl SnapshotManager {
     fn load(snapshot_file: &PathBuf) -> Self {
         if snapshot_file.exists() {
             match fs::read_to_string(snapshot_file) {
-                Ok(content) => match serde_json::from_str(&content) {
-                    Ok(manager) => manager,
-                    Err(e) => {
-                        eprintln!("解析快照文件失败: {e}");
-                        Self::new()
-                    }
-                },
+                Ok(content) => serde_json::from_str(&content).unwrap_or_else(|e| {
+                    eprintln!("解析快照文件失败: {e}");
+                    Self::new()
+                }),
                 Err(e) => {
                     eprintln!("读取快照文件失败: {e}");
                     Self::new()
@@ -138,7 +126,7 @@ impl SnapshotManager {
 fn get_latest_modification_time(path: &PathBuf) -> Result<u64, Box<dyn std::error::Error>> {
     let mut latest_time = 0;
 
-    for entry in WalkBuilder::new(path).build() {
+    for entry in WalkBuilder::new(path).hidden(false).git_global(false).build() {
         if let Ok(entry) = entry {
             if let Ok(metadata) = entry.metadata() {
                 if let Ok(modified) = metadata.modified() {
@@ -161,7 +149,7 @@ fn has_modifications_after(
     path: &PathBuf,
     after_timestamp: u64,
 ) -> Result<bool, Box<dyn std::error::Error>> {
-    for entry in WalkBuilder::new(path).build() {
+    for entry in WalkBuilder::new(path).hidden(false).git_global(false).build() {
         if let Ok(entry) = entry {
             if let Ok(metadata) = entry.metadata() {
                 if let Ok(modified) = metadata.modified() {
@@ -284,11 +272,11 @@ fn main() {
             fs::create_dir_all(&temp_dir).expect("无法创建临时目录");
 
             // 使用FileWalker复制文件到临时目录
-            let walker = WalkBuilder::new(&path); // 包含 .git 目录
+            let walker = WalkBuilder::new(&path).hidden(false).git_global(false).build(); // 包含 .git 目录
 
             let mut file_count = 0;
 
-            for entry in walker.build() {
+            for entry in walker {
                 if let Ok(entry) = entry {
                     let entry_path = entry.path();
                     if entry_path.is_file() {
